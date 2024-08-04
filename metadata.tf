@@ -20,6 +20,10 @@ locals {
       resource_tags_value         = "Resource tags value is not in valid format, please check your \"tags\" object."
       timeout_key                 = "Timeout key is not valid, please check your \"metadata\" object, only \"create\", \"read\", \"update\" and \"delete\" can be used as metadata key value."
       timeout_value               = "Timeout value is not in valid format, please check your \"metadata\" object."
+      os_type_key                 = "OS type key is not valid, please check your \"os_type\" variable."
+      os_type_value               = "The os_type variable must be one of: Windows, Linux, or WindowsContainer."
+      sku_name_key                = "SKU name key is not valid, please check your \"sku_name\" variable."
+      sku_name_value              = "The sku_name variable must be one of the allowed SKU values."
     }
     validator_expressions = {
       default             = ".*"
@@ -27,6 +31,9 @@ locals {
       resource_tags_value = "^.{1,256}$"
       timeout_key         = "^(create|read|update|delete)$"
       timeout_value       = "^[0-9]+[smh]$"
+      os_type             = "^(Windows|Linux|WindowsContainer)$"
+      sku_name            = "^(B1|B2|B3|D1|F1|I1|I2|I3|I1v2|I2v2|I3v2|I4v2|I5v2|I6v2|P1v2|P2v2|P3v2|P0v3|P1v3|P2v3|P3v3|P1mv3|P2mv3|P3mv3|P4mv3|P5mv3|S1|S2|S3|SHARED|EP1|EP2|EP3|FC1|WS1|WS2|WS3|Y1)$"
+   
     }
   }
   metadata = {
@@ -112,6 +119,8 @@ variable "metadata" {
     resource_timeouts        = optional(map(map(string)), {})
     validator_error_messages = optional(map(string), {})
     validator_expressions    = optional(map(string), {})
+    os_type                  = optional(string, null)
+    sku_name                 = optional(string, null)
   })
   default = {}
   // Timeout values validation
@@ -211,6 +220,44 @@ variable "metadata" {
     error_message = lookup(
       local.definitions.validator_error_messages,
       "default_resource_tags_key",
+      local.definitions.validator_error_messages["default"]
+    )
+  }
+
+// OS type validation
+  validation {
+    condition = var.metadata.os_type == null || can(
+      regex(
+        lookup(
+          local.definitions.validator_expressions,
+          "os_type",
+          local.definitions.validator_expressions["default"]
+        ),
+        var.metadata.os_type
+      )
+    )
+    error_message = lookup(
+      local.definitions.validator_error_messages,
+      "os_type_value",
+      local.definitions.validator_error_messages["default"]
+    )
+  }
+
+  // SKU name validation
+  validation {
+    condition = var.metadata.sku_name == null || can(
+      regex(
+        lookup(
+          local.definitions.validator_expressions,
+          "sku_name",
+          local.definitions.validator_expressions["default"]
+        ),
+        var.metadata.sku_name
+      )
+    )
+    error_message = lookup(
+      local.definitions.validator_error_messages,
+      "sku_name_value",
       local.definitions.validator_error_messages["default"]
     )
   }
